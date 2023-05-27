@@ -1,0 +1,25 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model LightningAddress {
+  username String @id
+  splits Split[]
+}
+
+model Split {
+  id String @id @default(cuid())
+  lightningAddressId String 
+  lightningAddress LightningAddress @relation(fields: [lightningAddressId], references: [username], onDelete: Cascade)
+  
+  recipientLightningAddress String
+  percentage Int
+}

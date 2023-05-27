@@ -36,7 +36,7 @@ export async function getLnurlpData(
     // FIXME: this is using the metadata / description of the receiver account instead of the unique lightning address
     return res.json({
       allowsNostr: true,
-      callback: `${process.env.DOMAIN}/lnurlp/${username}/callback`,
+      callback: `https://${process.env.DOMAIN}/lnurlp/${username}/callback`,
       maxSendable: ln.lnurlpData.rawData.maxSendable,
       metadata: ln.lnurlpData.rawData.metadata,
       minSendable: ln.lnurlpData.rawData.minSendable,

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "ts-node ./src/app.ts",
     "build": "tsc",
+    "start": "node dist/app.js",
     "docker:start": "docker-compose up",
     "docker:stop": "docker-compose stop",
     "docker:remove": "docker-compose down",

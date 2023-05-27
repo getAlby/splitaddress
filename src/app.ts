@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import { createSplits } from "./createSplits";
 import { getLnurlpData } from "./getLnurlpData";
 import { getLnurlpCallback } from "./getLnurlpCallback";
@@ -7,6 +8,7 @@ import { postSettledInvoice } from "./postSettledInvoice";
 const port = process.env.PORT || 8080;
 const app = express();
 
+app.use(cors());
 app.use(
   express.json({
     verify: (req, res, buf) => {

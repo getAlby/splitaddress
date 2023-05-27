@@ -1,6 +1,7 @@
 import express from "express";
 import { prismaClient } from "./prismaClient";
 import { LightningAddress } from "alby-tools";
+import { getMetadata } from "./utils";
 
 export async function getLnurlpData(
   req: express.Request,
@@ -34,13 +35,15 @@ export async function getLnurlpData(
     }
 
     // FIXME: this is using the metadata / description of the receiver account instead of the unique lightning address
+    // TODO: use alby invoice API for this
     return res.json({
       allowsNostr: true,
       callback: `https://${process.env.DOMAIN}/lnurlp/${username}/callback`,
       maxSendable: ln.lnurlpData.rawData.maxSendable,
-      metadata: ln.lnurlpData.rawData.metadata,
+      metadata: JSON.stringify(getMetadata(username)),
       minSendable: ln.lnurlpData.rawData.minSendable,
       nostrPubkey: ln.lnurlpData.rawData.nostrPubkey,
+      payerData: ln.lnurlpData.rawData.payerData,
       status: "OK",
       tag: "payRequest",
     });

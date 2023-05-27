@@ -1,6 +1,7 @@
 import express from "express";
 import { prismaClient } from "./prismaClient";
-import { LightningAddress } from "alby-tools";
+import { getMetadataHash } from "./utils";
+import { Invoice } from "./Invoice";
 
 export async function getLnurlpCallback(
   req: express.Request,
@@ -25,24 +26,39 @@ export async function getLnurlpCallback(
         .json({ status: "ERROR", reason: "lightning address does not exist" });
     }
 
-    // proxy request
-    const ln = new LightningAddress(receiverAddress);
-    // fetch the LNURL data
-    await ln.fetch();
-    if (!ln.lnurlpData) {
-      throw new Error("Could not retrieve lnurlpData from " + receiverAddress);
+    const amountInMsat = parseInt((req.query as any)["amount"]);
+    if (!amountInMsat) {
+      return res
+        .status(400)
+        .json({ status: "ERROR", reason: "amount is missing" });
+    }
+    const amount = amountInMsat / 1000;
+
+    const invoiceResponse = await fetch(
+      "https://getalby.com/api/invoices.json",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          amount: amount,
+          memo: `SplitAddress ${username}`,
+          // TODO: handle metadata hash for nostr zaps
+          description_hash: getMetadataHash(username),
+          payer_name: username,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+          "lightning-address": receiverAddress,
+        },
+      }
+    );
+
+    if (!invoiceResponse.ok) {
+      throw new Error(
+        "Failed to request invoice: " + (await invoiceResponse.text())
+      );
     }
 
-    const invoiceParams = {
-      // FIXME: typings
-      ...(req.query as any),
-      payerdata: JSON.stringify({
-        // FIXME: what field should be used here?
-        name: username,
-      }),
-    };
-    console.log("Requesting invoice with params", invoiceParams);
-    const invoice = await ln.generateInvoice(invoiceParams);
+    const invoice = (await invoiceResponse.json()) as Invoice;
 
     const response = {
       status: "OK",
@@ -51,7 +67,7 @@ export async function getLnurlpCallback(
         message: "Thanks, sats received!",
       },
       routes: [],
-      pr: invoice.paymentRequest,
+      pr: invoice.payment_request,
     };
     return res.json(response);
   } catch (error) {

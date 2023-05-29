@@ -22,7 +22,7 @@ export async function createSplits(
       data: {
         username: new Haikunator().haikunate({
           delimiter: "",
-          tokenLength: 0,
+          tokenLength: 2,
         }),
         splits: {
           createMany: {

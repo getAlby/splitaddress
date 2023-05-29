@@ -13,7 +13,7 @@ curl --location --request POST 'https://splitaddress.fly.dev/splits' \
 }'
 ```
 
-This will return an address like `divinehill@splitaddress.fly.dev`. Any sats sent to this address will be forwarded to the splits.
+This will return an address like `divinehill76@splitaddress.fly.dev`. Any sats sent to this address will be forwarded to the splits.
 
 Please note: 1% will be reserved for each split for fees. At least 2 sats must be allocated to a split for the payment to be sent. Any unspent sats will be consumed by Alby. The request split percentages must be whole numbers and add up to exactly 100%.
 

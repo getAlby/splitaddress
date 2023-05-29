@@ -3,6 +3,10 @@ import { Webhook } from "svix";
 import { prismaClient } from "./prismaClient";
 import { LightningAddress } from "alby-tools";
 import { Invoice } from "./Invoice";
+import { webln } from "alby-js-sdk";
+import "websocket-polyfill";
+import * as crypto from "node:crypto";
+global.crypto = crypto;
 
 export async function postSettledInvoice(
   req: express.Request,
@@ -10,12 +14,11 @@ export async function postSettledInvoice(
   next: express.NextFunction
 ) {
   try {
-    const webhookSecret = process.env.WEBHOOK_SECRET;
-    const lndhubUser = process.env.LNDHUB_USER;
-    const lndhubPassword = process.env.LNDHUB_PASSWORD;
-    if (!lndhubUser || !lndhubPassword) {
-      throw new Error("No LNDHUB credentials set");
+    const nwcUri = process.env.NWC_URI;
+    if (!nwcUri) {
+      throw new Error("No NWC URI set");
     }
+    const webhookSecret = process.env.WEBHOOK_SECRET;
 
     let invoice: Invoice;
     if (!webhookSecret) {
@@ -55,6 +58,12 @@ export async function postSettledInvoice(
       throw new Error("No lightning address found for " + invoice.payer_name);
     }
 
+    const noswebln = new webln.NostrWebLNProvider({
+      nostrWalletConnectUrl: nwcUri,
+    });
+
+    await noswebln.enable();
+
     for (const split of lightningAddress.splits) {
       const splitAmount = Math.floor(invoice.amount * (split.percentage / 100));
       const fee = Math.ceil(splitAmount / 100);
@@ -71,67 +80,21 @@ export async function postSettledInvoice(
             comment: "SplitAddress sats",
           });
 
-          // TODO: switch to use NWC
-          const userAgent = "Alby SplitAddress";
-
-          const authResponse = await fetch("https://ln.getalby.com/auth", {
-            method: "POST",
-            headers: {
-              "User-Agent": userAgent,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              login: lndhubUser,
-              password: lndhubPassword,
-            }),
-          });
-          if (!authResponse.ok) {
-            throw new Error(
-              "Failed to authenticate to lndhub: " + (await authResponse.text())
-            );
-          }
-
-          const authResponseJson = await authResponse.json();
-          const accessToken = authResponseJson.access_token;
-          if (!accessToken) {
-            throw new Error("No access_token found in response");
-          }
-
-          const paymentResponse = await fetch(
-            `https://ln.getalby.com/v2/payments/bolt11`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-                "User-Agent": userAgent,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                invoice: splitInvoice.paymentRequest,
-              }),
-            }
-          );
-
-          if (!paymentResponse.ok) {
-            throw new Error(
-              "Failed to pay invoice: " + (await paymentResponse.text())
-            );
-          }
-
-          const paymentResponseJson = await paymentResponse.json();
-
-          if (paymentResponseJson.payment_preimage) {
+          const response = (await noswebln.sendPayment(
+            splitInvoice.paymentRequest
+          )) as { preimage: string };
+          if (response.preimage) {
             console.log("Paid invoice", {
-              preimage: paymentResponseJson.payment_preimage,
+              preimage: response.preimage,
               splitId: split.id,
               username: invoice.payer_name,
               paymentHash: invoice.payment_hash,
               splitAmount: splitAmountMinusFee,
-              fee: paymentResponseJson.fee,
+              // fee: response.fee,
               originalInvoiceAmount: invoice.amount,
             });
           } else {
-            throw new Error("No preimage in payment result");
+            throw new Error("Payment sent but no preimage in response");
           }
         } else {
           console.log("Skipped split payment", {
@@ -149,6 +112,8 @@ export async function postSettledInvoice(
         });
       }
     }
+
+    noswebln.close();
 
     return res.status(200).end();
   } catch (error) {

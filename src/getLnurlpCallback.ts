@@ -1,6 +1,6 @@
 import express from "express";
 import { prismaClient } from "./prismaClient";
-import { getMetadataHash } from "./utils";
+import { getMetadataForUsername, getMetadataHash } from "./utils";
 import { Invoice } from "./Invoice";
 
 export async function getLnurlpCallback(
@@ -42,7 +42,9 @@ export async function getLnurlpCallback(
           amount: amount,
           memo: `SplitAddress ${username}`,
           // TODO: handle metadata hash for nostr zaps
-          description_hash: getMetadataHash(username),
+          description_hash: req.query.nostr
+            ? getMetadataHash(req.query.nostr as string)
+            : getMetadataHash(JSON.stringify(getMetadataForUsername(username))),
           payer_name: username,
         }),
         headers: {

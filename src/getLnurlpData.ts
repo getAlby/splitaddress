@@ -1,7 +1,7 @@
 import express from "express";
 import { prismaClient } from "./prismaClient";
 import { LightningAddress } from "alby-tools";
-import { getMetadata } from "./utils";
+import { getMetadataForUsername } from "./utils";
 
 export async function getLnurlpData(
   req: express.Request,
@@ -40,7 +40,7 @@ export async function getLnurlpData(
       allowsNostr: true,
       callback: `https://${process.env.DOMAIN}/lnurlp/${username}/callback`,
       maxSendable: ln.lnurlpData.rawData.maxSendable,
-      metadata: JSON.stringify(getMetadata(username)),
+      metadata: JSON.stringify(getMetadataForUsername(username)),
       minSendable: ln.lnurlpData.rawData.minSendable,
       nostrPubkey: ln.lnurlpData.rawData.nostrPubkey,
       payerData: ln.lnurlpData.rawData.payerData,

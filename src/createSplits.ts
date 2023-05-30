@@ -11,9 +11,12 @@ export async function createSplits(
 ) {
   try {
     const splits = req.body as CreateSplitsRequest;
-    if (Object.values(splits).reduce((a, b) => a + b, 0) !== 100) {
-      res.status(400).send("Splits should add up to 100%");
-      return;
+    const percentageSum = Object.values(splits).reduce((a, b) => a + b, 0);
+    if (percentageSum > 100) {
+      return res.status(400).send("Split percentages exceed 100%");
+    }
+    if (percentageSum !== Math.floor(percentageSum)) {
+      return res.status(400).send("Split percentages should be whole numbers");
     }
 
     // TODO: verify lightning addresses

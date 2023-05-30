@@ -12,6 +12,9 @@ export async function createSplits(
   try {
     const splits = req.body as CreateSplitsRequest;
     const percentageSum = Object.values(splits).reduce((a, b) => a + b, 0);
+    if (percentageSum === 0) {
+      return res.status(400).send("No splits provided");
+    }
     if (percentageSum > 100) {
       return res.status(400).send("Split percentages exceed 100%");
     }

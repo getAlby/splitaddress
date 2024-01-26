@@ -1,5 +1,7 @@
 # SplitAddress
 
+**UPDATE** Alby demo instance has been shut down. This is now supported natively by NIP-57: https://github.com/nostr-protocol/nips/blob/master/57.md#appendix-g-zap-tag-on-other-events
+
 Generate a random lightning address that forwards incoming payments to multiple lightning addresses.
 
 Try it out:
